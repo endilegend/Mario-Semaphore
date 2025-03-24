@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -19,9 +18,17 @@ struct Valves
     int num;
     int complexity;
 };
-int remaining;
 struct Valves valves[90];
+// sruct for valves
+struct Plumber
+{
+    int score;
+    char name[50];
+};
+struct Plumber plumbers[6];
+int remaining;
 sem_t sem;
+sem_t sem2;
 
 void deleteIndex(int i)
 {
@@ -38,28 +45,6 @@ void *fixing(void *arg)
     while (remaining > 0)
     {
         int character = *((int *)arg);
-        char name[30];
-        switch (character)
-        {
-        case 0:
-            strcpy(name, "Mario");
-            break;
-        case 1:
-            strcpy(name, "Luigi");
-            break;
-        case 2:
-            strcpy(name, "BOWSER");
-            break;
-        case 3:
-            strcpy(name, "PRINCESSPEACH");
-            break;
-        case 4:
-            strcpy(name, "TOAD");
-            break;
-        case 5:
-            strcpy(name, "Yoshi");
-            break;
-        }
         // Crit Sec
         sem_wait(&sem);
         if (remaining <= 0)
@@ -74,9 +59,20 @@ void *fixing(void *arg)
         sem_post(&sem);
         for (int i = comp; i >= 0; i--)
         {
-            printf("%s OPENING VALVE %d - Time remaining %d\n", name, num, i);
+            sem_wait(&sem2);
+            printf("%s OPENING VALVE %d - Time remaining %d\n", plumbers[*((int *)arg)].name, num, i);
+            sem_post(&sem2);
+            sleep(1);
         }
-        printf("VALVE %d OPENED BY %s\n", num, name);
+        plumbers[*((int *)arg)].score++;
+        sem_wait(&sem2);
+        printf("VALVE %d OPENED BY %s\n", num, plumbers[*((int *)arg)].name);
+        for (int i = 0; i < 6; i++)
+        {
+            printf("%s-%d ", plumbers[i].name, plumbers[i].score);
+        }
+        printf("\n");
+        sem_post(&sem2);
     }
     return NULL;
 }
@@ -85,6 +81,7 @@ int main()
 {
     remaining = randomInt(56, 90);
     sem_init(&sem, 0, 1);
+    sem_init(&sem2, 0, 1);
     pthread_t threads[6];
     int comp;
     printf("Valves created:\n");
@@ -101,6 +98,27 @@ int main()
     int thread_ids[6];
     for (int i = 0; i < 6; i++)
     {
+        switch (i)
+        {
+        case 0:
+            strcpy(plumbers[i].name, "Mario");
+            break;
+        case 1:
+            strcpy(plumbers[i].name, "Luigi");
+            break;
+        case 2:
+            strcpy(plumbers[i].name, "BOWSER");
+            break;
+        case 3:
+            strcpy(plumbers[i].name, "PRINCESSPEACH");
+            break;
+        case 4:
+            strcpy(plumbers[i].name, "TOAD");
+            break;
+        case 5:
+            strcpy(plumbers[i].name, "Yoshi");
+            break;
+        }
         thread_ids[i] = i;
         pthread_create(&threads[i], NULL, fixing, &thread_ids[i]);
     }
